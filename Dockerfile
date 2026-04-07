@@ -66,13 +66,7 @@ ENV VAPIX_HOST="localhost" \
 # The main loop writes a heartbeat timestamp to /tmp/heartbeat.
 # docker inspect --format='{{json .State.Health}}' <container> shows status.
 HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
-    CMD python -c "
-import os, time, sys
-hb = '/tmp/heartbeat'
-if not os.path.exists(hb): sys.exit(1)
-age = time.time() - os.path.getmtime(hb)
-sys.exit(0 if age < 700 else 1)
-"
+    CMD python -c "import os,time,sys; hb='/tmp/heartbeat'; sys.exit(0 if os.path.exists(hb) and time.time()-os.path.getmtime(hb)<700 else 1)"
 
 # ── Entrypoint ────────────────────────────────────────────────────────────────
 CMD ["python", "-u", "weather_acap.py"]
