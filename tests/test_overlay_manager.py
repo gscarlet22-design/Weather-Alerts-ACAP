@@ -7,6 +7,7 @@ graceful no-op when device has no video, and text truncation.
 
 import sys
 from pathlib import Path
+from unittest.mock import ANY
 
 import pytest
 
@@ -161,7 +162,7 @@ class TestUpdate:
         prev = OverlayState(overlay_id="existing-id")
         state = update(weather, default_config, mock_vapix_client, prev, has_video=True)
 
-        mock_vapix_client.update_overlay.assert_called_once_with("existing-id", pytest.ANY)
+        mock_vapix_client.update_overlay.assert_called_once_with("existing-id", ANY)
         mock_vapix_client.create_overlay.assert_not_called()
 
     def test_recreates_overlay_when_update_fails(self, mock_vapix_client, default_config):
@@ -186,7 +187,7 @@ class TestUpdate:
         weather = _make_weather()
         state = update(weather, default_config, mock_vapix_client, OverlayState(), has_video=True)
 
-        mock_vapix_client.update_overlay.assert_called_once_with("weather_acap_recover", pytest.ANY)
+        mock_vapix_client.update_overlay.assert_called_once_with("weather_acap_recover", ANY)
 
 
 # ── cleanup ───────────────────────────────────────────────────────────────────
