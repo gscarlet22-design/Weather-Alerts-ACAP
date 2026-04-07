@@ -1,7 +1,7 @@
 # Weather Monitor ACAP
 
-[![Tests](https://github.com/your-org/weather-acap/actions/workflows/test.yml/badge.svg)](https://github.com/your-org/weather-acap/actions/workflows/test.yml)
-[![Build](https://github.com/your-org/weather-acap/actions/workflows/build.yml/badge.svg)](https://github.com/your-org/weather-acap/actions/workflows/build.yml)
+[![Tests](https://github.com/gscarlet22-design/Weather-Alerts-ACAP/actions/workflows/test.yml/badge.svg)](https://github.com/gscarlet22-design/Weather-Alerts-ACAP/actions/workflows/test.yml)
+[![Build](https://github.com/gscarlet22-design/Weather-Alerts-ACAP/actions/workflows/build.yml/badge.svg)](https://github.com/gscarlet22-design/Weather-Alerts-ACAP/actions/workflows/build.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![ACAP v4](https://img.shields.io/badge/ACAP-v4%20containerized-brightgreen.svg)](https://developer.axis.com/acap/)
