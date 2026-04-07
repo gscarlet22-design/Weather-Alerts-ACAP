@@ -13,9 +13,11 @@ on:
       - main
 
 env:
-  # The Axis Computer Vision SDK image used to package the .eap.
-  # Pin to a specific digest in production for reproducibility.
-  ACAP_SDK_IMAGE: axisecp/acap-computer-vision-sdk:3.3-aarch64
+  # The Axis Native SDK image used to package the .eap.
+  # acap-computer-vision-sdk was deprecated in 2024; acap-native-sdk
+  # is the current replacement and includes the acap-build tool for
+  # both native and containerized ACAP apps.
+  ACAP_SDK_IMAGE: axisecp/acap-native-sdk:12.6.0-aarch64-ubuntu24.04
 
 jobs:
   # ── Job 1: Run tests first — build is gated on this ────────────────────────
@@ -71,33 +73,31 @@ jobs:
             echo "version=dev-${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
           fi
 
-      # Build the ARM64 image and export it as a tar archive.
-      # 'load' is not available for cross-platform builds, so we use
-      # --output type=docker to write the image tar directly.
-      - name: Build ARM64 Docker image
-        run: |
-          docker buildx build \
-            --platform linux/arm64 \
-            --output "type=docker,dest=image.tar" \
-            --tag weather-acap:${{ steps.version.outputs.version }} \
-            .
-
-      # The Axis CV SDK acap-build tool reads manifest.json + image.tar from
-      # the working directory and produces a *.eap file.
+      # acap-build (from the Axis Native SDK image) handles both building the
+      # ARM64 Docker image and packaging it into a .eap file in one step.
+      # We mount the host Docker socket so the inner container can invoke
+      # Docker buildx for the linux/arm64 cross-build.
+      # The manifest.json must have "appType": "containerized" for this to work.
       - name: Package .eap with Axis ACAP SDK
         run: |
           docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
             -v "$(pwd):/workspace" \
             -w /workspace \
             ${{ env.ACAP_SDK_IMAGE }} \
             acap-build .
 
-      # Rename the .eap to include the version for traceability.
+      # Rename the generated .eap to include the version for traceability.
       - name: Rename .eap artifact
         run: |
-          EAP_FILE=$(ls *.eap | head -1)
+          EAP_FILE=$(ls *.eap 2>/dev/null | head -1)
+          if [ -z "$EAP_FILE" ]; then
+            echo "ERROR: No .eap file found after acap-build. Check the packaging step logs."
+            exit 1
+          fi
           mv "$EAP_FILE" "weather-acap-${{ steps.version.outputs.version }}.eap"
           echo "EAP_FILE=weather-acap-${{ steps.version.outputs.version }}.eap" >> "$GITHUB_ENV"
+          echo "Packaged: weather-acap-${{ steps.version.outputs.version }}.eap"
 
       - name: Upload .eap as build artifact
         uses: actions/upload-artifact@v4
