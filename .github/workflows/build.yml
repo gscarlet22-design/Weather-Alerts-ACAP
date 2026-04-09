@@ -82,14 +82,15 @@ jobs:
           echo "Docker image size: $(du -h Docker.tar | cut -f1)"
 
       # For containerized ACAP v4, the .eap file is a gzipped tar containing:
-      #   - manifest.json  (application metadata)
+      #   - manifest.json  (application metadata / ACAP v4 schema)
+      #   - package.conf   (legacy metadata required by acapctl installer)
       #   - Docker.tar     (the ARM64 Docker image)
-      # No Axis SDK required — this is the documented format.
+      # acapctl expects package.conf to exist even for manifest-based v4 packages.
       - name: Package .eap (containerized ACAP v4 format)
         run: |
           VERSION=${{ steps.version.outputs.version }}
           EAP_NAME="weather-acap-${VERSION}.eap"
-          tar czf "$EAP_NAME" manifest.json Docker.tar
+          tar czf "$EAP_NAME" manifest.json package.conf Docker.tar
           echo "EAP_FILE=$EAP_NAME" >> "$GITHUB_ENV"
           echo "Packaged: $EAP_NAME ($(du -h $EAP_NAME | cut -f1))"
 
