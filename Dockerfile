@@ -12,21 +12,19 @@
 # VAPIX endpoints at http://localhost/... from inside the container.
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Use the official slim Python image. Pin to a specific digest in production
-# to guarantee reproducible builds on the device.
-FROM python:3.11-slim
+# Alpine-based image — ~50MB vs ~130MB for slim, keeping the .eap small enough
+# to fit in Axis device internal flash (M3086-V, P3245, etc.).
+# All app dependencies are pure Python so musl libc is not an issue.
+FROM python:3.11-alpine
 
 # Metadata
 LABEL maintainer="your-team@example.com" \
-      version="1.0.0" \
+      version="1.0.2" \
       description="NWS weather polling ACAP with VAPIX event and overlay integration"
 
 # ── System dependencies ───────────────────────────────────────────────────────
-# curl is useful for troubleshooting inside the container via exec.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        curl \
-        tzdata \
-    && rm -rf /var/lib/apt/lists/*
+# curl for troubleshooting; tzdata for pytz zone files on Alpine.
+RUN apk add --no-cache curl tzdata
 
 # ── Application directory ─────────────────────────────────────────────────────
 WORKDIR /app
