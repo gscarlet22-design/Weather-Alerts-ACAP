@@ -90,7 +90,7 @@ jobs:
         run: |
           VERSION=${{ steps.version.outputs.version }}
           EAP_NAME="weather-acap-${VERSION}.eap"
-          tar czf "$EAP_NAME" manifest.json package.conf Docker.tar
+          tar czf "$EAP_NAME" manifest.json package.conf LICENSE Docker.tar
           echo "EAP_FILE=$EAP_NAME" >> "$GITHUB_ENV"
           echo "Packaged: $EAP_NAME ($(du -h $EAP_NAME | cut -f1))"
 
