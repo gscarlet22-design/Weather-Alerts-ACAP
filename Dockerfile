@@ -23,8 +23,8 @@ LABEL maintainer="your-team@example.com" \
       description="NWS weather polling ACAP with VAPIX event and overlay integration"
 
 # ── System dependencies ───────────────────────────────────────────────────────
-# curl for troubleshooting; tzdata for pytz zone files on Alpine.
-RUN apk add --no-cache curl tzdata
+# No system packages needed — pytz bundles its own timezone data,
+# and all app deps are pure Python wheels.
 
 # ── Application directory ─────────────────────────────────────────────────────
 WORKDIR /app
@@ -33,7 +33,7 @@ WORKDIR /app
 # when requirements.txt changes, not when source changes.
 COPY app/requirements.txt ./requirements.txt
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --no-compile -r requirements.txt
 
 # Copy the rest of the application source
 COPY app/ ./
