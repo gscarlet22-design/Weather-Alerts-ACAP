@@ -1,24 +1,16 @@
 {
   "schemaVersion": "1.3.1",
-  "vendor": "Custom",
-  "vendorUrl": "https://example.com",
-  "version": "1.0.0",
-  "apiVersion": "1.0.0",
-  "name": "weather_acap",
-  "friendlyName": "Weather Monitor ACAP",
-  "description": "Polls the US National Weather Service API for current conditions and severe weather alerts. Injects custom VAPIX events into the Axis event system and renders a dynamic text overlay on video streams.",
-  "architecture": "aarch64",
-  "runOptions": "--network host --restart unless-stopped",
   "acapPackageConf": {
     "setup": {
+      "appName": "weather_acap",
+      "friendlyName": "Weather Monitor ACAP",
+      "vendor": "Custom",
+      "vendorUrl": "https://example.com",
+      "version": "1.0.1",
+      "apiVersion": "1.0.0",
+      "architecture": "aarch64",
       "appType": "containerized",
-      "user": {
-        "username": "sdk",
-        "uid": 1000,
-        "groups": [
-          {"groupname": "sdk", "gid": 1000}
-        ]
-      }
+      "runOptions": "--network host"
     }
   }
 }
