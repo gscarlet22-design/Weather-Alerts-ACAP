@@ -35,19 +35,19 @@ static const char *compiled_default(const char *name) {
 }
 
 gboolean params_init(GError **error) {
-    g_axparam = axparameter_new(APP_NAME, error);
+    g_axparam = ax_parameter_new(APP_NAME, error);
     if (!g_axparam) return FALSE;
 
-    /* Ensure every parameter exists so axparameter_set() works reliably from
+    /* Ensure every parameter exists so ax_parameter_set() works reliably from
      * the CGI binary.  On first install none of these have been created yet. */
     for (int i = 0; DEFAULTS[i].name; i++) {
         gchar  *existing = NULL;
         GError *e        = NULL;
-        gboolean ok = axparameter_get(g_axparam, DEFAULTS[i].name, &existing, &e);
+        gboolean ok = ax_parameter_get(g_axparam, DEFAULTS[i].name, &existing, &e);
         if (!ok || !existing) {
             if (e) g_error_free(e);
             GError *se = NULL;
-            axparameter_set(g_axparam, DEFAULTS[i].name, DEFAULTS[i].value, &se);
+            ax_parameter_set(g_axparam, DEFAULTS[i].name, DEFAULTS[i].value, &se);
             if (se) g_error_free(se);
         } else {
             g_free(existing);
@@ -58,7 +58,7 @@ gboolean params_init(GError **error) {
 
 void params_cleanup(void) {
     if (g_axparam) {
-        axparameter_free(g_axparam);
+        ax_parameter_free(g_axparam);
         g_axparam = NULL;
     }
 }
@@ -68,7 +68,7 @@ char *params_get(const char *name) {
 
     GError *err = NULL;
     gchar  *val = NULL;
-    if (!axparameter_get(g_axparam, name, &val, &err) || !val) {
+    if (!ax_parameter_get(g_axparam, name, &val, &err) || !val) {
         if (err) g_error_free(err);
         return strdup(compiled_default(name));
     }
@@ -83,7 +83,7 @@ gboolean params_set(const char *name, const char *value, GError **error) {
             *error = g_error_new(G_FILE_ERROR, G_FILE_ERROR_FAILED, "axparameter not initialized");
         return FALSE;
     }
-    return axparameter_set(g_axparam, name, value, error);
+    return ax_parameter_set(g_axparam, name, value, error);
 }
 
 int params_get_int(const char *name, int default_val) {
