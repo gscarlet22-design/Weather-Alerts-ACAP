@@ -27,13 +27,13 @@ CGI_SRCS = config_cgi.c
 
 all: $(MAIN_PROG) $(CGI_PROG)
 
-# Main daemon
+# Main daemon — CFLAGS carries --sysroot and -L needed for cross-linking
 $(MAIN_PROG): $(MAIN_OBJS)
-	$(CC) -o $@ $^ $(LDLIBS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
 
 # Config CGI — built into html/ and shares prebuilt params.o + cJSON.o
 $(CGI_PROG): config_cgi.o params.o cJSON.o
-	$(CC) -o $@ $^ $(LDLIBS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
 
 $(CGI_PROG): | html
 
