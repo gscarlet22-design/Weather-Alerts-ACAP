@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Weather ACAP — Configuration</title>
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+        crossorigin="anonymous">
+  <style>
+    body { background: #f5f5f5; }
+    .status-card { background: #fff; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; }
+    .alert-badge { background: #dc3545; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 0.8rem; }
+    .provider-badge { font-size: 0.75rem; color: #6c757d; }
+    #save-result { display: none; }
+  </style>
+</head>
+<body>
+<div class="container py-4" style="max-width:760px">
+
+  <h2 class="mb-1">Weather Monitor ACAP</h2>
+  <p class="text-muted mb-4">Native ACAP v4 — CV25 · ARTPEC-7/8/9</p>
+
+  <!-- ── Status panel ─────────────────────────────────────────────────── -->
+  <div class="status-card shadow-sm" id="status-panel">
+    <h5 class="mb-3">Current Status <button class="btn btn-sm btn-outline-secondary ms-2" onclick="loadStatus()">↻ Refresh</button></h5>
+    <div id="status-body" class="text-muted">Loading…</div>
+  </div>
+
+  <!-- ── Config form ──────────────────────────────────────────────────── -->
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h5 class="card-title mb-3">Configuration</h5>
+      <form id="config-form">
+
+        <div class="row g-3">
+
+          <!-- Location -->
+          <div class="col-12"><h6 class="text-muted border-bottom pb-1">Location</h6></div>
+
+          <div class="col-sm-4">
+            <label class="form-label">US ZIP Code</label>
+            <input type="text" class="form-control" name="zip" id="zip"
+                   maxlength="10" placeholder="e.g. 90210">
+          </div>
+          <div class="col-sm-4">
+            <label class="form-label">Latitude Override <span class="text-muted">(optional)</span></label>
+            <input type="text" class="form-control" name="lat_override" id="lat_override"
+                   placeholder="e.g. 34.0736">
+          </div>
+          <div class="col-sm-4">
+            <label class="form-label">Longitude Override <span class="text-muted">(optional)</span></label>
+            <input type="text" class="form-control" name="lon_override" id="lon_override"
+                   placeholder="e.g. -118.4004">
+          </div>
+          <div class="col-12">
+            <div class="form-text">Lat/Lon overrides bypass ZIP geocoding — use for large ZIPs where the centroid is far from the camera site.</div>
+          </div>
+
+          <!-- Weather provider -->
+          <div class="col-12 mt-2"><h6 class="text-muted border-bottom pb-1">Weather Provider</h6></div>
+
+          <div class="col-sm-6">
+            <label class="form-label">Conditions Source</label>
+            <select class="form-select" name="weather_provider" id="weather_provider">
+              <option value="auto">Auto (NWS → Open-Meteo fallback)</option>
+              <option value="nws">NWS only</option>
+              <option value="openmeteo">Open-Meteo only</option>
+            </select>
+            <div class="form-text">NWS = US only, no key required. Open-Meteo = global, no key required.</div>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">NWS User-Agent <span class="text-muted">(your email)</span></label>
+            <input type="text" class="form-control" name="nws_user_agent" id="nws_user_agent"
+                   placeholder="WeatherACAP/2.0 (you@example.com)">
+            <div class="form-text">Required by NWS API policy.</div>
+          </div>
+
+          <!-- Alerts / Virtual Inputs -->
+          <div class="col-12 mt-2"><h6 class="text-muted border-bottom pb-1">Alerts &amp; Virtual Inputs</h6></div>
+
+          <div class="col-12">
+            <label class="form-label">NWS Alert Types (comma-separated)</label>
+            <input type="text" class="form-control" name="alert_types" id="alert_types"
+                   placeholder="Tornado Warning,Severe Thunderstorm Warning,Flash Flood Warning">
+            <div class="form-text">
+              Each alert type maps to one virtual input port sequentially from the start port.
+              Port numbers: <strong>start, start+1, start+2, …</strong>
+            </div>
+          </div>
+
+          <div class="col-sm-4">
+            <label class="form-label">Virtual Port Start</label>
+            <input type="number" class="form-control" name="virtual_port_start" id="virtual_port_start"
+                   min="1" max="64" step="1">
+            <div class="form-text">Default: 20. Max safe: 32.</div>
+          </div>
+
+          <!-- Overlay -->
+          <div class="col-12 mt-2"><h6 class="text-muted border-bottom pb-1">Overlay &amp; Polling</h6></div>
+
+          <div class="col-sm-4">
+            <label class="form-label">Text Overlay</label>
+            <select class="form-select" name="overlay_enabled" id="overlay_enabled">
+              <option value="yes">Enabled</option>
+              <option value="no">Disabled</option>
+            </select>
+            <div class="form-text">Cameras only; silently skipped on speakers/intercoms.</div>
+          </div>
+
+          <div class="col-sm-4">
+            <label class="form-label">Poll Interval (seconds)</label>
+            <input type="number" class="form-control" name="poll_interval" id="poll_interval"
+                   min="60" max="3600" step="60">
+            <div class="form-text">Min 60 s. Applies on next restart.</div>
+          </div>
+
+          <div class="col-sm-4">
+            <label class="form-label">Mock Mode</label>
+            <select class="form-select" name="mock_mode" id="mock_mode">
+              <option value="no">Disabled (live data)</option>
+              <option value="yes">Enabled (test data)</option>
+            </select>
+          </div>
+
+          <!-- VAPIX credentials -->
+          <div class="col-12 mt-2"><h6 class="text-muted border-bottom pb-1">VAPIX Credentials</h6></div>
+
+          <div class="col-sm-6">
+            <label class="form-label">VAPIX Username</label>
+            <input type="text" class="form-control" name="vapix_user" id="vapix_user"
+                   placeholder="root">
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">VAPIX Password</label>
+            <input type="password" class="form-control" name="vapix_pass" id="vapix_pass"
+                   placeholder="Leave blank to keep existing password">
+            <div class="form-text">Sent to the device over HTTPS. Use an Operator or Admin account.</div>
+          </div>
+
+        </div><!-- /row -->
+
+        <div class="mt-4 d-flex align-items-center gap-3">
+          <button type="submit" class="btn btn-primary px-4">Save Configuration</button>
+          <div id="save-result" class="text-success fw-semibold"></div>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+const CGI = 'config_cgi';
+
+/* ── Load config + status ────────────────────────────────────────────────── */
+async function loadStatus() {
+  document.getElementById('status-body').textContent = 'Loading…';
+  try {
+    const resp = await fetch(CGI, { credentials: 'include' });
+    const data = await resp.json();
+
+    /* Populate form */
+    const c = data.config || {};
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    setVal('zip',                c.zip);
+    setVal('lat_override',       c.lat_override);
+    setVal('lon_override',       c.lon_override);
+    setVal('alert_types',        c.alert_types);
+    setVal('poll_interval',      c.poll_interval);
+    setVal('virtual_port_start', c.virtual_port_start);
+    setVal('nws_user_agent',     c.nws_user_agent);
+    setVal('vapix_user',         c.vapix_user);
+    /* never pre-fill password */
+
+    const setSelect = (id, val) => {
+      const el = document.getElementById(id);
+      if (el && val) el.value = val;
+    };
+    setSelect('weather_provider', c.weather_provider);
+    setSelect('overlay_enabled',  c.overlay_enabled);
+    setSelect('mock_mode',        c.mock_mode);
+
+    /* Render status */
+    const s = data.status || {};
+    renderStatus(s);
+  } catch (e) {
+    document.getElementById('status-body').innerHTML =
+      '<span class="text-danger">Could not load status: ' + e.message + '</span>';
+  }
+}
+
+function renderStatus(s) {
+  const el = document.getElementById('status-body');
+  if (!s.last_poll) { el.textContent = 'No data yet — waiting for first poll.'; return; }
+
+  const c = s.conditions || {};
+  const alertBadge = s.alert_count > 0
+    ? `<span class="alert-badge ms-2">${s.alert_count} ALERT${s.alert_count > 1 ? 'S' : ''}</span>`
+    : '';
+
+  el.innerHTML = `
+    <div class="row g-2">
+      <div class="col-auto fs-3 fw-bold">${c.temp_f != null ? Math.round(c.temp_f) + '°F' : '—'} ${alertBadge}</div>
+    </div>
+    <div>${c.description || '—'} &nbsp;
+      <span class="provider-badge">via ${c.provider || '?'}</span>
+    </div>
+    <div class="text-muted mt-1">
+      Wind: ${c.wind_speed_mph != null ? Math.round(c.wind_speed_mph) + ' mph ' + (c.wind_dir_str || '') : '—'} &nbsp;|&nbsp;
+      Humidity: ${c.humidity_pct != null ? c.humidity_pct + '%' : '—'} &nbsp;|&nbsp;
+      Last updated: ${s.last_poll ? new Date(s.last_poll).toLocaleTimeString() : '—'}
+    </div>
+    ${s.overlay_text ? `<div class="mt-2 font-monospace text-secondary" style="font-size:0.8rem">${s.overlay_text}</div>` : ''}
+  `;
+}
+
+/* ── Save config ─────────────────────────────────────────────────────────── */
+document.getElementById('config-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const fd   = new FormData(this);
+  const body = new URLSearchParams(fd).toString();
+  const res  = document.getElementById('save-result');
+  res.style.display = 'none';
+
+  try {
+    const resp = await fetch(CGI, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body
+    });
+    const data = await resp.json();
+    res.style.display = '';
+    if (data.ok) {
+      res.className = 'text-success fw-semibold';
+      res.textContent = '✓ Saved (' + data.saved + ' parameters)';
+    } else {
+      res.className = 'text-danger fw-semibold';
+      res.textContent = '✗ Save failed (' + (data.errors || 0) + ' errors)';
+    }
+  } catch (e) {
+    res.style.display = '';
+    res.className = 'text-danger fw-semibold';
+    res.textContent = '✗ Request failed: ' + e.message;
+  }
+});
+
+/* ── Init ─────────────────────────────────────────────────────────────────── */
+loadStatus();
+</script>
+</body>
+</html>
