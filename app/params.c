@@ -47,7 +47,7 @@ gboolean params_init(GError **error) {
         if (!ok || !existing) {
             if (e) g_error_free(e);
             GError *se = NULL;
-            ax_parameter_set(g_axparam, DEFAULTS[i].name, DEFAULTS[i].value, &se);
+            ax_parameter_set(g_axparam, DEFAULTS[i].name, DEFAULTS[i].value, TRUE, &se);
             if (se) g_error_free(se);
         } else {
             g_free(existing);
@@ -83,7 +83,7 @@ gboolean params_set(const char *name, const char *value, GError **error) {
             *error = g_error_new(G_FILE_ERROR, G_FILE_ERROR_FAILED, "axparameter not initialized");
         return FALSE;
     }
-    return ax_parameter_set(g_axparam, name, value, error);
+    return ax_parameter_set(g_axparam, name, value, TRUE, error);
 }
 
 int params_get_int(const char *name, int default_val) {
