@@ -16,7 +16,7 @@
         {
           "name": "weather_acap",
           "access": "admin",
-          "defaultPage": "index.html"
+          "type": "directory"
         }
       ],
       "parameters": [
