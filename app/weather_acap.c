@@ -137,7 +137,7 @@ static gboolean do_poll(gpointer user_data) {
                 snprintf(overlay_text, sizeof(overlay_text), "[ALERT: %s] ",
                          snap.alerts.alerts[0].event);
             }
-            char cond_part[128];
+            char cond_part[200];
             snprintf(cond_part, sizeof(cond_part),
                      "Temp: %.0f\xC2\xB0""F | %s | Wind: %.0fmph %s | Humidity: %d%%",
                      snap.conditions.temp_f,
