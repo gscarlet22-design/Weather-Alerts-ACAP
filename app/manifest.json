@@ -3,12 +3,12 @@
   "acapPackageConf": {
     "setup": {
       "appName": "weather_acap",
+      "friendlyName": "Weather Monitor ACAP",
       "vendor": "Custom",
       "vendorUrl": "https://example.com",
       "version": "2.0.0",
-      "apiVersion": "1.0.0",
       "architecture": "aarch64",
-      "appType": "native",
+      "embeddedSdkVersion": "3.0",
       "runMode": "respawn"
     },
     "configuration": {
