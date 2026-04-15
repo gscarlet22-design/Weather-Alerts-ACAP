@@ -85,8 +85,8 @@ static char *read_status_file(void) {
     rewind(f);
     char *buf = (char *)malloc(sz + 1);
     if (!buf) { fclose(f); return strdup("{}"); }
-    fread(buf, 1, sz, f);
-    buf[sz] = '\0';
+    size_t nr = fread(buf, 1, sz, f);
+    buf[nr] = '\0';
     fclose(f);
     return buf;
 }
@@ -146,13 +146,6 @@ static void handle_get(void) {
 }
 
 /* ── POST handler ────────────────────────────────────────────────────────── */
-
-static const char *SAVE_FIELDS[] = {
-    "ZipCode", "LatOverride", "LonOverride", "AlertTypes",
-    "PollInterval", "VirtualPortStart", "WeatherProvider",
-    "NWSUserAgent", "OverlayEnabled", "VapixUser", "VapixPass", "MockMode",
-    NULL
-};
 
 /* Mapping from HTML form field names to axparameter names */
 static const char *FORM_TO_PARAM[][2] = {
