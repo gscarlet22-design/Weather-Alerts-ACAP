@@ -1,0 +1,110 @@
+{
+  "schemaVersion": "1.3.1",
+  "acapPackageConf": {
+    "setup": {
+      "appName": "weather_acap",
+      "vendor": "Custom",
+      "vendorUrl": "https://example.com",
+      "version": "2.0.0",
+      "apiVersion": "1.0.0",
+      "architecture": "aarch64",
+      "appType": "native",
+      "runMode": "respawn"
+    },
+    "configuration": {
+      "httpConfig": [
+        {
+          "name": "weather_acap",
+          "access": "admin",
+          "defaultPage": "index.html"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "ZipCode",
+          "description": "US ZIP code for weather location",
+          "defaultValue": "",
+          "type": "string",
+          "access": "rw"
+        },
+        {
+          "name": "LatOverride",
+          "description": "Optional latitude override (skips ZIP geocoding when set)",
+          "defaultValue": "",
+          "type": "string",
+          "access": "rw"
+        },
+        {
+          "name": "LonOverride",
+          "description": "Optional longitude override (skips ZIP geocoding when set)",
+          "defaultValue": "",
+          "type": "string",
+          "access": "rw"
+        },
+        {
+          "name": "AlertTypes",
+          "description": "Comma-separated NWS alert event names that trigger virtual inputs",
+          "defaultValue": "Tornado Warning,Severe Thunderstorm Warning,Flash Flood Warning",
+          "type": "string",
+          "access": "rw"
+        },
+        {
+          "name": "PollInterval",
+          "description": "Weather poll interval in seconds (minimum 60)",
+          "defaultValue": "300",
+          "type": "string",
+          "access": "rw"
+        },
+        {
+          "name": "VirtualPortStart",
+          "description": "First VAPIX virtual input port number for alert triggering",
+          "defaultValue": "20",
+          "type": "string",
+          "access": "rw"
+        },
+        {
+          "name": "WeatherProvider",
+          "description": "Conditions provider: auto (NWS then Open-Meteo), nws, openmeteo",
+          "defaultValue": "auto",
+          "type": "string",
+          "access": "rw"
+        },
+        {
+          "name": "NWSUserAgent",
+          "description": "User-Agent for NWS API calls (include your contact email per NWS policy)",
+          "defaultValue": "WeatherACAP/2.0 (admin@example.com)",
+          "type": "string",
+          "access": "rw"
+        },
+        {
+          "name": "OverlayEnabled",
+          "description": "Enable VAPIX text overlay on video (yes/no)",
+          "defaultValue": "yes",
+          "type": "string",
+          "access": "rw"
+        },
+        {
+          "name": "VapixUser",
+          "description": "VAPIX username for localhost API calls",
+          "defaultValue": "root",
+          "type": "string",
+          "access": "rw"
+        },
+        {
+          "name": "VapixPass",
+          "description": "VAPIX password for localhost API calls",
+          "defaultValue": "",
+          "type": "string",
+          "access": "rw"
+        },
+        {
+          "name": "MockMode",
+          "description": "Return static test data instead of live API calls (yes/no)",
+          "defaultValue": "no",
+          "type": "string",
+          "access": "rw"
+        }
+      ]
+    }
+  }
+}
