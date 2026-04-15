@@ -36,7 +36,24 @@ static const char *compiled_default(const char *name) {
 
 gboolean params_init(GError **error) {
     g_axparam = axparameter_new(APP_NAME, error);
-    return g_axparam != NULL;
+    if (!g_axparam) return FALSE;
+
+    /* Ensure every parameter exists so axparameter_set() works reliably from
+     * the CGI binary.  On first install none of these have been created yet. */
+    for (int i = 0; DEFAULTS[i].name; i++) {
+        gchar  *existing = NULL;
+        GError *e        = NULL;
+        gboolean ok = axparameter_get(g_axparam, DEFAULTS[i].name, &existing, &e);
+        if (!ok || !existing) {
+            if (e) g_error_free(e);
+            GError *se = NULL;
+            axparameter_set(g_axparam, DEFAULTS[i].name, DEFAULTS[i].value, &se);
+            if (se) g_error_free(se);
+        } else {
+            g_free(existing);
+        }
+    }
+    return TRUE;
 }
 
 void params_cleanup(void) {
