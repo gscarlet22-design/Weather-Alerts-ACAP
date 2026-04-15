@@ -1,141 +1,135 @@
 name: Build & Package ACAP
 
-# Runs on pushes to main (produces a build artifact) and on version tags
-# (v*.*.* pattern — additionally uploads the .eap to a GitHub Release).
+# Produces native .eap files — no AXIS Container Runtime required on the camera.
+# Two architectures built in parallel:
+#   aarch64 — CV25, ARTPEC-8, ARTPEC-9
+#   armv7hf — ARTPEC-7 (requires AXIS OS 11.10+)
 on:
   push:
-    branches:
-      - main
-    tags:
-      - "v*.*.*"
+    branches: [main]
+    tags:     ["v*.*.*"]
   pull_request:
-    branches:
-      - main
-
-  # No SDK image required — containerized ACAP v4 .eap files are a
-  # gzipped tar of manifest.json + Docker.tar. We build the ARM64 image
-  # with buildx and package it manually without the Axis SDK.
+    branches: [main]
 
 jobs:
-  # ── Job 1: Run tests first — build is gated on this ────────────────────────
-  test:
-    name: Run test suite
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: pip
-
-      - run: pip install -r app/requirements.txt -r tests/requirements-test.txt
-
-      - run: pytest tests/ -v --tb=short --cov=app --cov-report=xml
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage
-          path: coverage.xml
-          retention-days: 7
-
-  # ── Job 2: Build ARM64 Docker image and package .eap ───────────────────────
+  # ── Job 1: Build native .eap for each architecture ────────────────────────
   build:
-    name: Build linux/arm64 image + package .eap
+    name: Build ${{ matrix.arch }} .eap
     runs-on: ubuntu-latest
-    needs: test  # only runs if tests pass
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: aarch64   # CV25, ARTPEC-8, ARTPEC-9
+          - arch: armv7hf   # ARTPEC-7
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # QEMU enables ARM64 emulation on the AMD64 GitHub runner.
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
-      # Buildx is required for --platform cross-builds.
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # Determine a version string for the artifact name.
       - name: Derive version
         id: version
         run: |
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            VER="${GITHUB_REF_NAME}"
+            ACAP_VER="${VER#v}"
           else
-            echo "version=dev-${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
+            VER="dev-${GITHUB_SHA::8}"
+            ACAP_VER="0.0.0"
           fi
+          echo "version=${VER}"           >> "$GITHUB_OUTPUT"
+          echo "acap_version=${ACAP_VER}" >> "$GITHUB_OUTPUT"
 
-      # Build the ARM64 Docker image and export it as Docker.tar.
-      # This is the image that will run on the Axis device.
-      - name: Build ARM64 Docker image
+      # Stamp architecture + version into manifest.json before the build.
+      # jq is pre-installed on ubuntu-latest.
+      - name: Stamp manifest.json
         run: |
-          docker buildx build \
-            --platform linux/arm64 \
-            --output "type=docker,dest=Docker.tar" \
-            --tag weather-acap:${{ steps.version.outputs.version }} \
-            .
-          echo "Docker image size: $(du -h Docker.tar | cut -f1)"
+          jq \
+            --arg arch "${{ matrix.arch }}" \
+            --arg ver  "${{ steps.version.outputs.acap_version }}" \
+            '.acapPackageConf.setup.architecture = $arch
+           | .acapPackageConf.setup.version      = $ver' \
+            app/manifest.json > app/manifest.json.tmp
+          mv app/manifest.json.tmp app/manifest.json
+          cat app/manifest.json
 
-      # For containerized ACAP v4, the .eap file is a gzipped tar containing:
-      #   - manifest.json  (application metadata / ACAP v4 schema)
-      #   - package.conf   (legacy metadata required by acapctl installer)
-      #   - Docker.tar     (the ARM64 Docker image)
-      # acapctl expects package.conf to exist even for manifest-based v4 packages.
-      - name: Package .eap (containerized ACAP v4 format)
+      # The ACAP Native SDK image ships its own cross-toolchain — no QEMU needed.
+      - name: Build with ACAP Native SDK
         run: |
-          VERSION=${{ steps.version.outputs.version }}
-          EAP_NAME="weather-acap-${VERSION}.eap"
-          tar czf "$EAP_NAME" manifest.json package.conf LICENSE Docker.tar
-          echo "EAP_FILE=$EAP_NAME" >> "$GITHUB_ENV"
-          echo "Packaged: $EAP_NAME ($(du -h $EAP_NAME | cut -f1))"
+          docker run --rm \
+            -v "${{ github.workspace }}/app:/opt/app" \
+            axisecp/acap-native-sdk:1.14-${{ matrix.arch }}-ubuntu22.04 \
+            sh -c '. /opt/axis/acapsdk/environment-setup-* \
+                   && cd /opt/app \
+                   && acap-build .'
 
-      - name: Upload .eap as build artifact
+      - name: Rename and report .eap
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          ARCH="${{ matrix.arch }}"
+          SRC=$(ls app/*.eap 2>/dev/null | head -1)
+          if [[ -z "$SRC" ]]; then echo "ERROR: no .eap produced" && exit 1; fi
+          DEST="weather-acap-${VERSION}-${ARCH}.eap"
+          cp "$SRC" "$DEST"
+          echo "Built: ${DEST}  ($(du -h "$DEST" | cut -f1))"
+
+      - name: Upload .eap artifact
         uses: actions/upload-artifact@v4
         with:
-          name: weather-acap-${{ steps.version.outputs.version }}
+          name: weather-acap-${{ steps.version.outputs.version }}-${{ matrix.arch }}
           path: "*.eap"
           retention-days: 30
 
-  # ── Job 3: Publish to GitHub Release (tags only) ───────────────────────────
+  # ── Job 2: Publish GitHub Release on version tags ─────────────────────────
   release:
     name: Publish GitHub Release
     runs-on: ubuntu-latest
     needs: build
-    # Only run on version tags, not on every push to main.
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
-      contents: write  # required to create/upload release assets
+      contents: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download .eap artifact
+      - name: Download aarch64 artifact
         uses: actions/download-artifact@v4
         with:
-          name: weather-acap-${{ github.ref_name }}
+          name: weather-acap-${{ github.ref_name }}-aarch64
           path: dist/
 
-      - name: Create GitHub Release and upload .eap
+      - name: Download armv7hf artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: weather-acap-${{ github.ref_name }}-armv7hf
+          path: dist/
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: "Weather ACAP ${{ github.ref_name }}"
-          draft: false
+          tag_name:   ${{ github.ref_name }}
+          name:       "Weather ACAP ${{ github.ref_name }}"
+          draft:      false
           prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') }}
           body: |
             ## Weather ACAP ${{ github.ref_name }}
 
+            Native ACAP v4 — **no AXIS Container Runtime required**.
+
+            ### Download the right .eap for your camera
+
+            | File | SoC |
+            |---|---|
+            | `weather-acap-*-aarch64.eap` | CV25, ARTPEC-8, ARTPEC-9 |
+            | `weather-acap-*-armv7hf.eap` | ARTPEC-7 (AXIS OS 11.10+) |
+
             ### Installation
-            1. Download the `.eap` file below.
-            2. In the Axis device web interface, go to **Apps → Add app**.
-            3. Upload the `.eap` file and click **Install**.
-            4. Start the app and open the config UI on port **8080**.
+            1. In the device web interface, go to **Apps → Add app**.
+            2. Upload the `.eap` matching your camera's SoC.
+            3. Start the app.
+            4. Open **`http://<device>/local/weather_acap/`** to configure ZIP, alerts, and credentials.
 
             ### What's new
             See [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
