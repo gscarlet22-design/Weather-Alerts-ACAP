@@ -47,16 +47,6 @@ static char *http_get(const char *url, const char *user_agent) {
     return buf.data; /* caller must free */
 }
 
-/* ── Wind direction helper ───────────────────────────────────────────────── */
-
-static const char *wind_dir_str(int deg) {
-    if (deg < 0) return "N/A";
-    const char *dirs[] = { "N","NNE","NE","ENE","E","ESE","SE","SSE",
-                           "S","SSW","SW","WSW","W","WNW","NW","NNW" };
-    return dirs[((deg + 11) % 360) / 23];
-}
-(void)wind_dir_str; /* suppress unused warning; used by overlay */
-
 /* ── Census Geocoder ─────────────────────────────────────────────────────── */
 
 void nws_geocode_zip(const char *zip, const char *user_agent, NWSCoords *result) {
